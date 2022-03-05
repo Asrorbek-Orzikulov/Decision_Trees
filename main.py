@@ -23,14 +23,14 @@ class BaseTree:
         # checking for max_depth, min_samples_split, min_samples_leaf
         if max_depth == None: return True
         if node.get_depth() >= max_depth: return True
-        if node.get_num_samples() < min_samples_split: return True
+        if node.get_num_samples() < min_samples_split: return True  # don't agree
         if node.get_num_samples() <= min_samples_leaf: return True
 
         #if not beyond depth or not below min samples
         return False
 
     def split_tree(self, node):
-        # @asror i think this needs to be first
+        # @asror i think this needs to be first  --  don't agree
         if self.should_stop(node): return
 
         # best threshold in any column that gives the lowest gini/mse 
@@ -107,7 +107,7 @@ class Node:
         p1 = left_count / n
         p2 = right_count / n
         
-        # Calculating GINI 
+        # Calculating GINI -- don't think it is good
         gini = 1 - (p1 ** 2 + p2 ** 2) 
         return gini
 
@@ -151,7 +151,7 @@ class Node:
 
         for threshold in unique_values: #iterate through possible thresholds
             # we take the (distribution of) labels 
-             _, _, left, right = self.split_node(column, threshold)
+             _, _, left, right = self.split_node(column, threshold)  # don't agree - this is O(n**2). We need O(nlogn)
 
             # Classification or Regression task?
             if criterion == "classification": 
@@ -170,14 +170,14 @@ class Node:
     def find_best_split(self, criterion):   # move to Node
         best_score = np.inf
         best_threshold = 0
-        best_column = None 
+        best_column = None
 
         for column in self._data.columns:  # iterating over columns
             # find the best score/threshold for this column
             score, threshold = self.split_by_column(column, criterion)
 
             # improve our scores and move to the next possible column
-            if score is not None and score <= best_score: 
+            if score is not None and score <= best_score:  # don't agree - when can score be None. Why not np.inf ?
                 best_score = score
                 best_threshold = threshold
                 best_column = column
