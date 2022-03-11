@@ -12,6 +12,6 @@ We implemented a Decision Tree from scratch. It can use either Cross Entropy or 
 We benchmark our model against the scikit-learn implementation (graphic below) and we get nearly the same results for splitting. 
 ![Graphic](https://github.com/Asrorbek-Orzikulov/Decision_Trees/blob/master/data/Diagram.jpeg) 
 
-Please see our .ipynb file for more detailed explanation.
+Please see our .ipynb file for more detailed explanation. We use the data found in bencmark [diabetes dataset](https://www.kaggle.com/uciml/pima-indians-diabetes-database).
 
 
