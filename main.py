@@ -22,25 +22,25 @@ class DecisionTree:
         if not self._fitted:
             raise AttributeError("Fit method hasn't been called yet.")
 
-        predictions = self.obtain_predictions(X_test, self._root)
+        predictions = []
+        row_count = X_test.shape[0]
+        for row_idx in range(row_count):
+            prediction = self.obtain_predictions(X_test[row_idx, :], self._root)
+            predictions.append(prediction)
         predictions = np.array(predictions)
         return predictions
 
-    def obtain_predictions(self, X_test, node):
+    def obtain_predictions(self, test_row, node):
         left_child, right_child = node.get_children()
         if (left_child is None) and (right_child is None):  # if it's a leaf node
             prediction = node.make_prediction(self._criterion)
-            predictions = [prediction] * len(X_test)
-            return predictions
+            return prediction
 
         column, threshold = node.get_rule()
-        is_less_or_equal = X_test[:, column] <= threshold
-        left_data = X_test[is_less_or_equal, :]
-        right_data = X_test[~is_less_or_equal, :]
-        left_predictions = self.obtain_predictions(left_data, left_child)
-        right_predictions = self.obtain_predictions(right_data, right_child)
-        full_predictions = left_predictions + right_predictions
-        return full_predictions
+        if test_row[column] <= threshold:
+            return self.obtain_predictions(test_row, left_child)
+        else:
+            return self.obtain_predictions(test_row, right_child)
 
     def should_stop(self, node):
         # checking if we should stop growing the tree
