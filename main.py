@@ -7,7 +7,10 @@ class BaseTree:
         self._root = None
         self._X = None
         self._y = None
-        self._criterion = criterion 
+        self._criterion = criterion
+        self._max_depth = max_depth
+        self._min_samples_split = min_samples_split
+        self._min_samples_leaf = min_samples_leaf
         pass
 
     def fit(self, X, y):
@@ -20,39 +23,36 @@ class BaseTree:
         pass
 
     def should_stop(self, node):
-        # checking for max_depth, min_samples_split, min_samples_leaf
-        if max_depth == None: return True
-        if node.get_depth() >= max_depth: return True
-        if node.get_num_samples() < min_samples_split: return True  # don't agree
-        if node.get_num_samples() <= min_samples_leaf: return True
+        # checking for max_depth and min_samples_split
+        if self._max_depth is None:
+            return False  # don't agree
+        elif node.get_depth() >= self._max_depth:
+            return True
+        elif node.get_num_samples() < self._min_samples_split:
+            return True
 
-        #if not beyond depth or not below min samples
         return False
+
+    def should_split(self, node, left_child, right_child):
+        # compute criterion and see if it improves
+        # check left_child.get_num_samples()
+        pass
 
     def split_tree(self, node):
         # @asror i think this needs to be first  --  don't agree
         if self.should_stop(node): return
-
         # best threshold in any column that gives the lowest gini/mse 
         column, threshold = node.find_best_split(self._criterion)
 
-        # using node function for X,y data
         left_data, right_data, left_labels, right_labels = node.split_node(column, threshold)
-
-        # update depth
         child_depth = node.get_depth() + 1
-
-        # create children
         left_node = Node(left_data, left_labels, parent=node, depth=child_depth)
         right_node = Node(right_data, right_labels, parent=node, depth=child_depth)
-        node.add_children(left_node=left_node, right_node=right_node)
-
-        # update the column threshold that this node is being split on
-        node.add_rule(column, threshold)
-
-        # recurse
-        self.split_tree(left_node)
-        self.split_tree(right_node)
+        if self.should_split(node, left_node, right_node):
+            node.add_children(left_node=left_node, right_node=right_node)
+            node.add_rule(column, threshold)
+            self.split_tree(left_node)
+            self.split_tree(right_node)
 
 
 class Node:
@@ -99,7 +99,7 @@ class Node:
         n = left_count + right_count
         
         # If n is 0 then we return the lowest possible gini impurity
-        if n == 0:
+        if n == 0:  # don't agree - return the GINI coeff without a split
             return 0.0
 
         # Getting the probability to see each of the classes 
@@ -150,10 +150,10 @@ class Node:
         unique_values = np.unique(column_values) 
 
         for threshold in unique_values: #iterate through possible thresholds
-            # we take the (distribution of) labels 
-             _, _, left, right = self.split_node(column, threshold)  # don't agree - this is O(n**2). We need O(nlogn)
+            # we take the (distribution of) labels
+            _, _, left, right = self.split_node(column, threshold)  # don't agree - this is O(n**2). We need O(nlogn)
 
-            # Classification or Regression task?
+            # Classification or Regression task ?
             if criterion == "classification": 
                 left_counts, right_counts = Counter(left), Counter(right)
                 score = node.compute_gini(left_counts, right_counts)
