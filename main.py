@@ -1,31 +1,53 @@
 import numpy as np
-import pandas as pd
+from collections import Counter
 
 
 class BaseTree:
-    def __init__(self, criterion, max_depth=None, min_samples_split=2, min_samples_leaf=1):
+    def __init__(self, criterion, max_depth=None, min_samples_split=2):
         self._root = None
         self._X = None
         self._y = None
         self._criterion = criterion
         self._max_depth = max_depth
         self._min_samples_split = min_samples_split
-        self._min_samples_leaf = min_samples_leaf
-        pass
+        self._fitted = False
 
     def fit(self, X, y):
+        assert isinstance(X, np.ndarray), "X should be a numpy array"
+        assert isinstance(y, np.ndarray), "y should be a numpy array"
         self._root = Node(X, y)
         self._X = X
         self._y = y
-        pass
+        self.split_tree(self._root)
+        self._fitted = True
 
-    def predict(self, X):
-        pass
+    def predict(self, X_test):
+        if not self._fitted:
+            raise AttributeError("Fit method hasn't been called yet.")
+
+        predictions = self.obtain_predictions(X_test, self._root)
+        predictions = np.array(predictions)
+        return predictions
+
+    def obtain_predictions(self, X_test, node):
+        left_child, right_child = node.get_children()
+        if (left_child is None) and (right_child is None):  # if it's a leaf node
+            prediction = node.make_prediction(self._criterion)
+            return [prediction]
+
+        column, threshold = node.get_rule()
+        is_less = X_test[:, column] < threshold
+        left_data = X_test[is_less, :]
+        right_data = X_test[~is_less, :]
+        left_predictions = self.obtain_predictions(left_data, left_child)
+        right_predictions = self.obtain_predictions(right_data, right_child)
+        full_predictions = left_predictions + right_predictions
+        return full_predictions
 
     def should_stop(self, node):
         # checking for max_depth and min_samples_split
         if self._max_depth is None:
-            return False  # don't agree
+            return False
         elif node.get_depth() >= self._max_depth:
             return True
         elif node.get_num_samples() < self._min_samples_split:
@@ -33,26 +55,20 @@ class BaseTree:
 
         return False
 
-    def should_split(self, node, left_child, right_child):
-        # compute criterion and see if it improves
-        # check left_child.get_num_samples()
-        pass
-
     def split_tree(self, node):
-        # @asror i think this needs to be first  --  don't agree
-        if self.should_stop(node): return
-        # best threshold in any column that gives the lowest gini/mse 
-        column, threshold = node.find_best_split(self._criterion)
+        if self.should_stop(node):
+            return
 
+        # best threshold in any column that gives the lowest gini/mse
+        column, threshold = node.find_best_split(self._criterion)
         left_data, right_data, left_labels, right_labels = node.split_node(column, threshold)
         child_depth = node.get_depth() + 1
         left_node = Node(left_data, left_labels, parent=node, depth=child_depth)
         right_node = Node(right_data, right_labels, parent=node, depth=child_depth)
-        if self.should_split(node, left_node, right_node):
-            node.add_children(left_node=left_node, right_node=right_node)
-            node.add_rule(column, threshold)
-            self.split_tree(left_node)
-            self.split_tree(right_node)
+        node.add_children(left_node=left_node, right_node=right_node)
+        node.add_rule(column, threshold)
+        self.split_tree(left_node)
+        self.split_tree(right_node)
 
 
 class Node:
@@ -83,11 +99,17 @@ class Node:
         self._column = column
         self._threshold = threshold
 
+    def get_rule(self):
+        return self._column, self._threshold
+
     def add_children(self, left_node, right_node):
         self._left_child = left_node
         self._right_child = right_node
 
-    def compute_gini(self, left_count, right_count):
+    def get_children(self):
+        return self._left_child, self._right_child
+
+    def compute_gini(self, left_count, right_count):  # TODO
         # Ensuring the correct types
         if left_count is None:
             left_count = 0
@@ -111,22 +133,20 @@ class Node:
         gini = 1 - (p1 ** 2 + p2 ** 2) 
         return gini
 
-    def compute_cross_entropy(self):
+    def compute_cross_entropy(self):  # TODO
         pass
 
-    def compute_mse(self):
+    def compute_mse(self):  # TODO
         actual_values = self._labels[:, -1]
         if len(actual_values) == 0:   # empty data
             mse = 0
-            
         else:
             #temporary placeholder till we implement a more robust predict method
             prediction = np.mean(actual_values) 
             mse = np.mean((actual_values - prediction) **2)
-        
         return mse
 
-    def compute_mae(self):
+    def compute_mae(self):  # TODO
         pass 
 
     def split_node(self, column, threshold): # moved to Node
@@ -139,9 +159,10 @@ class Node:
         right_labels = self._labels[~is_smaller, :]
         return left_data, right_data, left_labels, right_labels
 
-    def split_by_column(self, column, criterion):  # move to Node
+    def split_by_column(self, column, criterion):
         # will use node.compute_gini() or node.compute_mse() ]
-        best_score = np.inf
+        # no best split is found
+        best_score = np.inf  # score of the root node
         best_threshold = None
 
         # get all data for this column
@@ -156,9 +177,9 @@ class Node:
             # Classification or Regression task ?
             if criterion == "classification": 
                 left_counts, right_counts = Counter(left), Counter(right)
-                score = node.compute_gini(left_counts, right_counts)
-            if criterion == "regression": 
-                score = node.compute_mse(left, right) 
+                score = self.compute_gini(left_counts, right_counts)
+            elif criterion == "regression":
+                score = self.compute_mse(left, right)
 
             # improve our scores and move to the next possible threshold
             if score <= best_score:
@@ -185,3 +206,11 @@ class Node:
         # returns the best column after iterating through possible columns
         # returns the best threshold in the best column
         return best_column, best_threshold
+
+    def make_prediction(criterion):
+        if criterion == "classification":
+            # return majority class X_train
+            pass
+        elif criterion == "regression":
+            # return mean of X_train
+            pass
