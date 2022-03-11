@@ -82,6 +82,7 @@ class Node:
         self._threshold = None
         self._left_child = None
         self._right_child = None 
+        self._score_to_beat = self._parent.get_score()
 
     def get_depth(self):
         return self._depth
@@ -101,6 +102,12 @@ class Node:
 
     def get_rule(self):
         return self._column, self._threshold
+
+    def add_score(self, score):
+        self._score_to_beat = score
+
+    def get_score(self):
+        return self._score_to_beat
 
     def add_children(self, left_node, right_node):
         self._left_child = left_node
@@ -134,7 +141,11 @@ class Node:
         return gini
 
     def compute_cross_entropy(self):  # TODO
-        pass
+        col = self._X[:, -1] #not sure if this should be ._X or ._labels when doing Xtrain vs Xtest
+        classes, class_counts = np.unique(col, return_counts = True)
+        entropy_value = np.sum( [ (-class_counts[i]/np.sum(class_counts)) *  np.log2(class_counts[i]/np.sum(class_counts)) 
+                                for i in range(len(classes)) ] )
+        return entropy_value
 
     def compute_mse(self):  # TODO
         actual_values = self._labels[:, -1]
@@ -162,7 +173,7 @@ class Node:
     def split_by_column(self, column, criterion):
         # will use node.compute_gini() or node.compute_mse() ]
         # no best split is found
-        best_score = np.inf  # score of the root node
+        best_score = self._score_to_beat  # score of the parent node
         best_threshold = None
 
         # get all data for this column
@@ -189,7 +200,7 @@ class Node:
         return best_score, best_threshold
 
     def find_best_split(self, criterion):   # move to Node
-        best_score = np.inf
+        best_score = self._score_to_beat
         best_threshold = 0
         best_column = None
 
@@ -203,14 +214,17 @@ class Node:
                 best_threshold = threshold
                 best_column = column
 
+        self.add_score(best_score)
+
         # returns the best column after iterating through possible columns
         # returns the best threshold in the best column
         return best_column, best_threshold
 
     def make_prediction(criterion):
         if criterion == "classification":
-            # return majority class X_train
-            pass
+            c = Counter(self._X)
+            value, frequency = c.most_common()[0] #sorted by desc frequency, so pick top value
+            return value
+
         elif criterion == "regression":
-            # return mean of X_train
-            pass
+            return np.mean(self._X)
