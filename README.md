@@ -1,2 +1,17 @@
 # Decision_Trees
-monke collab
+# Authors: 
+- Asrorbek Arzikulov
+- Vincent Wilmet
+- Matteo Salvalaggio
+- Sofya Simakova
+- Sauraj Verma
+
+
+We implemented a Decision Tree from scratch. It can use either Cross Entropy or Gini for calulating impurity in classification tasks, and MSE or MAE for regression tasks. 
+
+We benchmark our model against the scikit-learn implementation (graphic below) and we get nearly the same results for splitting. 
+![Graphic](https://github.com/Asrorbek-Orzikulov/Decision_Trees/blob/master/data/Diagram.jpeg) 
+
+Please see our .ipynb file for more detailed explanation.
+
+
