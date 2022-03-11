@@ -36,9 +36,9 @@ class BaseTree:
             return [prediction]
 
         column, threshold = node.get_rule()
-        is_less = X_test[:, column] < threshold
-        left_data = X_test[is_less, :]
-        right_data = X_test[~is_less, :]
+        is_less_or_equal = X_test[:, column] <= threshold
+        left_data = X_test[is_less_or_equal, :]
+        right_data = X_test[~is_less_or_equal, :]
         left_predictions = self.obtain_predictions(left_data, left_child)
         right_predictions = self.obtain_predictions(right_data, right_child)
         full_predictions = left_predictions + right_predictions
@@ -61,7 +61,7 @@ class BaseTree:
 
         # best threshold in any column that gives the lowest gini/mse
         column, threshold = node.find_best_split(self._criterion)
-        left_data, right_data, left_labels, right_labels = node.split_node(column, threshold)
+        left_data, right_data, left_labels, right_labels = node.split_node_data(column, threshold)
         child_depth = node.get_depth() + 1
         left_node = Node(left_data, left_labels, parent=node, depth=child_depth)
         right_node = Node(right_data, right_labels, parent=node, depth=child_depth)
@@ -72,7 +72,7 @@ class BaseTree:
 
 
 class Node:
-    def __init__(self, X, y, parent=None, depth=0):
+    def __init__(self, X, y, parent=None, depth=0):  # parent seems irrelevant TODO
         self._data = X
         self._labels = y
         self._num_samples = len(self._labels)
@@ -149,14 +149,14 @@ class Node:
     def compute_mae(self):  # TODO
         pass 
 
-    def split_node(self, column, threshold): # moved to Node
+    def split_node_data(self, column, threshold):
         # function for spliting X, y to two nodes
         # according to a given column and threshold
-        is_smaller = self._data[:, column] < threshold
-        left_data = self._data[is_smaller, :]
-        right_data = self._data[~is_smaller, :]
-        left_labels = self._labels[is_smaller, :]
-        right_labels = self._labels[~is_smaller, :]
+        is_less_or_equal = self._data[:, column] <= threshold
+        left_data = self._data[is_less_or_equal, :]
+        right_data = self._data[~is_less_or_equal, :]
+        left_labels = self._labels[is_less_or_equal]
+        right_labels = self._labels[~is_less_or_equal]
         return left_data, right_data, left_labels, right_labels
 
     def split_by_column(self, column, criterion):
@@ -172,7 +172,7 @@ class Node:
 
         for threshold in unique_values: #iterate through possible thresholds
             # we take the (distribution of) labels
-            _, _, left, right = self.split_node(column, threshold)  # don't agree - this is O(n**2). We need O(nlogn)
+            _, _, left, right = self.split_node_data(column, threshold)  # don't agree - this is O(n**2). We need O(nlogn)
 
             # Classification or Regression task ?
             if criterion == "classification": 
