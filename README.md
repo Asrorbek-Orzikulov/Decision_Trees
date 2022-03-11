@@ -14,7 +14,8 @@ We benchmark our model against the scikit-learn implementation (graphic below) a
 
 Please see our .ipynb file for more detailed explanation. We used the data found in benchmark [diabetes dataset](https://www.kaggle.com/uciml/pima-indians-diabetes-database).
 
-As you can see, our model acheives the same results as the sci-kit learn implimentation.
-![Comparison](https://github.com/Asrorbek-Orzikulov/Decision_Trees/blob/master/data/comparison.jpeg)
+As you can see, our model acheives the same results as the sci-kit learn implimentation in both classification and regression tasks.
+![Classification](https://github.com/Asrorbek-Orzikulov/Decision_Trees/blob/master/data/comparison_classification.jpeg)
+![Regression](https://github.com/Asrorbek-Orzikulov/Decision_Trees/blob/master/data/comparison_regression.jpeg)
 
 Please be sure to check out the file test_cases.py where we wrote many test cases for each function/attribute of our Decision Tree to verify its robsutness.  
