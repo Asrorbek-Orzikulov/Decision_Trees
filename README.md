@@ -14,4 +14,5 @@ We benchmark our model against the scikit-learn implementation (graphic below) a
 
 Please see our .ipynb file for more detailed explanation. We use the data found in benchmark [diabetes dataset](https://www.kaggle.com/uciml/pima-indians-diabetes-database).
 
-
+As you can see, our model acheives the same results as the sci-kit learn implimentation.
+![Comparison](https://github.com/Asrorbek-Orzikulov/Decision_Trees/blob/master/data/comparison.jpeg)
