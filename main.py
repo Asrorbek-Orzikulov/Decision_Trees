@@ -2,11 +2,9 @@ import numpy as np
 from collections import Counter
 
 
-class BaseTree:
+class DecisionTree:
     def __init__(self, criterion, max_depth=None, min_samples_split=2):
         self._root = None
-        self._X = None
-        self._y = None
         self._criterion = criterion
         self._max_depth = max_depth
         self._min_samples_split = min_samples_split
@@ -15,10 +13,8 @@ class BaseTree:
     def fit(self, X, y):
         assert isinstance(X, np.ndarray), "X should be a numpy array"
         assert isinstance(y, np.ndarray), "y should be a numpy array"
-        assert X.shape[1] == len(y), "X and y should have the same length"
+        assert X.shape[0] == len(y), "X and y should have the same length"
         self._root = Node(X, y)
-        self._X = X
-        self._y = y
         self.split_tree(self._root)
         self._fitted = True
 
@@ -34,7 +30,7 @@ class BaseTree:
         left_child, right_child = node.get_children()
         if (left_child is None) and (right_child is None):  # if it's a leaf node
             prediction = node.make_prediction(self._criterion)
-            predictions = [prediction] * node.get_num_samples()
+            predictions = [prediction] * len(X_test)
             return predictions
 
         column, threshold = node.get_rule()
@@ -53,6 +49,8 @@ class BaseTree:
         elif node.get_depth() >= self._max_depth:
             return True
         elif node.get_num_samples() < self._min_samples_split:
+            return True
+        elif len(np.unique(node.get_targets())) == 1:
             return True
         return False
 
@@ -122,12 +120,16 @@ class Node:
         split_impurity /= self._num_samples
         return split_impurity
 
-    def compute_cross_entropy(self):  # TODO
-        col = self._X[:, -1]  # not sure if this should be ._X or ._targets when doing Xtrain vs Xtest
-        classes, class_counts = np.unique(col, return_counts = True)
-        entropy_value = np.sum( [ (-class_counts[i]/np.sum(class_counts)) *  np.log2(class_counts[i]/np.sum(class_counts)) 
-                                for i in range(len(classes)) ] )
-        return entropy_value
+    def compute_cross_entropy(self, left_targets, right_targets):
+        left_count_dict, right_count_dict = Counter(left_targets), Counter(right_targets)
+        left_count, right_count = len(left_targets), len(right_targets)
+        left_entropy = sum((-class_count/left_count) * np.log2(class_count/left_count)
+                           for class_count in left_count_dict.values())
+        right_entropy = sum((-class_count/right_count) * np.log2(class_count/right_count)
+                            for class_count in right_count_dict.values())
+        split_impurity = left_count*left_entropy + right_count*right_entropy
+        split_impurity /= self._num_samples
+        return split_impurity
 
     def compute_mse(self, left_targets, right_targets):
         left_count, right_count = len(left_targets), len(right_targets)
@@ -139,8 +141,15 @@ class Node:
         split_mse /= self._num_samples
         return split_mse
 
-    def compute_mae(self):  # TODO
-        pass 
+    def compute_mae(self, left_targets, right_targets):
+        left_count, right_count = len(left_targets), len(right_targets)
+        left_median = np.median(left_targets)
+        left_mae = np.mean((left_targets - left_median) ** 2)
+        right_median = np.median(right_targets)
+        right_mae = np.mean((right_targets - right_median) ** 2)
+        split_mae = left_count*left_mae + right_count*right_mae
+        split_mae /= self._num_samples
+        return split_mae
 
     def split_node_data(self, column, threshold):
         # splitting X and y according to a given column and threshold
@@ -157,17 +166,21 @@ class Node:
 
         # get unique values of a column to be our thresholds
         column_values = self._data[:, column]
-        thresholds = np.unique(column_values)
-        max_value = np.max(thresholds)
-        for threshold in thresholds:  # iterate through possible thresholds
+        max_value = np.max(column_values)
+        for threshold in column_values:
             if threshold < max_value:
                 is_small_or_eq = column_values <= threshold
                 left_targets = self._targets[is_small_or_eq]
                 right_targets = self._targets[~is_small_or_eq]
-                if criterion == "classification":
+                if criterion == "gini":
                     score = self.compute_gini(left_targets, right_targets)
-                elif criterion == "regression":
+                elif criterion == "entropy":
+                    score = self.compute_cross_entropy(left_targets, right_targets)
+                elif criterion == "mse":
                     score = self.compute_mse(left_targets, right_targets)
+                elif criterion == "mae":
+                    score = self.compute_mae(left_targets, right_targets)
+
                 if score < best_score:
                     best_score = score
                     best_threshold = threshold
@@ -190,7 +203,7 @@ class Node:
         return best_column, best_threshold
 
     def make_prediction(self, criterion):
-        if criterion == "classification":
+        if (criterion == "gini") or (criterion == "entropy"):
             c = Counter(self._targets)
             largest_frequency = 0
             prediction = None
@@ -199,5 +212,7 @@ class Node:
                     largest_frequency = frequency
                     prediction = value
             return prediction
-        elif criterion == "regression":
+        elif criterion == "mse":
             return np.mean(self._targets)
+        elif criterion == "mae":
+            return np.median(self._targets)

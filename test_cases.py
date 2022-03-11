@@ -1,5 +1,6 @@
-from main import BaseTree, Node
+from main import Node
 import numpy as np
+
 
 class TestSuite:
     """
@@ -48,7 +49,6 @@ def run_suite():
     """
     Some informal testing code
     """
-
     # creating a TestSuite object
     suite = TestSuite()
     X = np.array([[3, 4], [1, 2]])
@@ -93,18 +93,15 @@ def run_suite():
     suite.run_test(round(gini_imp, 3), 0.317, "Test 3.4: compute_gini")
 
     # testing the split_by_column and find_best_split methods:
-    best_score, best_threshold = node.split_by_column(0, "classification")
+    best_score, best_threshold = node.split_by_column(0, "gini")
     suite.run_test(round(best_score, 3), 0.4, "Test 4.1: split_by_column")
     suite.run_test(best_threshold, 6.7, "Test 4.2: split_by_column")
-    best_score, best_threshold = node.split_by_column(1, "classification")
+    best_score, best_threshold = node.split_by_column(1, "gini")
     suite.run_test(round(best_score, 3), 0.317, "Test 4.3: split_by_column")
     suite.run_test(best_threshold, 2.9, "Test 4.4: split_by_column")
-    best_column, best_threshold = node.find_best_split("classification")
+    best_column, best_threshold = node.find_best_split("gini")
     suite.run_test(best_column, 1, "Test 4.5: find_best_split")
     suite.run_test(best_threshold, 2.9, "Test 4.6: find_best_split")
-
-
-    # clf = BaseTree("classification", max_depth=1, min_samples_split=2)
 
     # reporting the results of the test
     suite.report_results()
